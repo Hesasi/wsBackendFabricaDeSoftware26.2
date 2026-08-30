@@ -141,9 +141,19 @@
     font-size:15.5px; color:var(--ink); cursor:pointer; }
   .spell-name{ font-weight:600; } .spell-name::before{ content:"✦ "; color:var(--gold); }
   .spell-lvl{ font-size:12.5px; color:var(--ink-soft); font-style:italic; white-space:nowrap; }
-  .spell-desc{ margin:8px 0 0; font-size:14px; color:var(--ink-soft); line-height:1.5;
-    white-space:pre-line; display:none; }
+  .spell-desc{ margin:8px 0 0; display:none; }
   .spell-desc.open{ display:block; }
+  .spell-badges{ display:flex; gap:6px; flex-wrap:wrap; margin:0 0 10px; }
+  .spell-badge{ font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    font-family:'Cinzel', serif; color:var(--oxblood-dark); background:rgba(92,26,27,0.1);
+    border:1px solid rgba(92,26,27,0.25); border-radius:20px; padding:3px 10px; }
+  .spell-stats{ display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:8px 16px;
+    margin:0 0 12px; padding:10px 12px; background:rgba(92,26,27,0.06); border-radius:4px;
+    border:1px solid rgba(92,26,27,0.12); }
+  .spell-stats .stat{ font-size:13px; color:var(--ink); line-height:1.4; }
+  .spell-stats .stat b{ font-family:'Cinzel', serif; font-weight:600; font-size:11px;
+    letter-spacing:0.05em; text-transform:uppercase; color:var(--ink-soft); display:block; }
+  .spell-text{ margin:0; font-size:14px; color:var(--ink-soft); line-height:1.5; white-space:pre-line; }
   .empty-spells{ font-style:italic; color:var(--ink-soft); font-size:14.5px; padding:6px 0 20px; }
 
   .add-spell{ border-top:1px dashed rgba(92,26,27,0.35); padding-top:20px; }
