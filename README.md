@@ -2,7 +2,6 @@
 
 API REST em Django para gerenciar personagens de RPG e seus feitiços. Ao adicionar uma magia, o backend busca os atributos oficiais na [D&D 5e API](https://www.dnd5eapi.co/) e persiste uma cópia local no banco (cache), associada ao personagem por chave estrangeira — incluindo detalhes de conjuração como tempo, alcance, componentes, duração, dano e teste de resistência.
 
-Arquitetura completa e decisões de design em `ADR-002-Grimorio.pdf` (mantido separadamente deste repositório).
 
 ## Stack
 
