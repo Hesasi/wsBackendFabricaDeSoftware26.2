@@ -1,4 +1,5 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
+from django.shortcuts import render
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -55,14 +56,15 @@ class MagiaViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            magia = Magia.objects.create(
-                personagem=personagem,
-                nome=dados_magia["nome"],
-                nivel=dados_magia["nivel"],
-                escola=dados_magia["escola"],
-                descricao=dados_magia["descricao"],
-                fonte_api=dados_magia["fonte_api"],
-            )
+            with transaction.atomic():
+                magia = Magia.objects.create(
+                    personagem=personagem,
+                    nome=dados_magia["nome"],
+                    nivel=dados_magia["nivel"],
+                    escola=dados_magia["escola"],
+                    descricao=dados_magia["descricao"],
+                    fonte_api=dados_magia["fonte_api"],
+                )
 
             serializer = self.get_serializer(magia)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -74,3 +76,9 @@ class MagiaViewSet(viewsets.ModelViewSet):
             )
         except Exception as exc:
             return Response({"erro": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+def pagina_personagens(request):
+    """Renderiza a página HTML com a lista de personagens e suas magias."""
+    personagens_do_banco = Personagem.objects.prefetch_related("magias").all()
+    return render(request, "core/lista_personagens.html", {"personagens": personagens_do_banco})

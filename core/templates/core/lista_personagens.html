@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>O Grimório</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment:#e9dcbd; --parchment-dark:#dccb9f;
+    --ink:#2b1b12; --ink-soft:#4a3627;
+    --oxblood:#5c1a1b; --oxblood-dark:#40100f;
+    --gold:#b8860b; --gold-bright:#d9a728;
+    --arcane:#1f3d2b; --candle:#e8a33d;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(232,163,61,0.10), transparent 55%),
+      radial-gradient(ellipse at 20% 80%, rgba(92,26,27,0.25), transparent 50%),
+      #120a06;
+    font-family:'EB Garamond', serif; color:var(--ink);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:40px 16px; overflow-x:hidden;
+  }
+  body::before{
+    content:""; position:fixed; inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0px, transparent 1px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0px, transparent 1px, transparent 3px);
+    pointer-events:none; mix-blend-mode:overlay;
+  }
+  .stage{ width:100%; max-width:840px; position:relative; }
+  .eyebrow{
+    font-family:'Cinzel', serif; letter-spacing:0.28em; font-size:12px;
+    color:var(--candle); text-align:center; text-transform:uppercase;
+    margin-bottom:14px; opacity:0.85;
+  }
+  .screen{ display:none; }
+  .screen.active{ display:block; animation:screenIn 650ms cubic-bezier(.2,.8,.2,1); }
+  @keyframes screenIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){ .screen.active{ animation:none; } }
+
+  .cover{
+    max-width:520px; margin:0 auto;
+    background:linear-gradient(160deg, rgba(255,255,255,0.03), rgba(0,0,0,0.25)),
+      radial-gradient(ellipse at 50% 0%, #6b2323, var(--oxblood-dark) 70%);
+    border:1px solid rgba(216,167,40,0.35); border-radius:6px;
+    padding:48px 40px 40px; position:relative;
+    box-shadow:0 30px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(216,167,40,0.08), inset 0 0 60px rgba(0,0,0,0.4);
+  }
+  .cover::before,.cover::after{ content:""; position:absolute; top:14px; bottom:14px; width:1px;
+    background:linear-gradient(to bottom, transparent, rgba(216,167,40,0.5), transparent); }
+  .cover::before{ left:14px; } .cover::after{ right:14px; }
+  .wordmark{ font-family:'UnifrakturMaguntia', cursive; font-size:56px; text-align:center; color:var(--gold-bright);
+    text-shadow:0 0 18px rgba(216,167,40,0.35), 0 2px 0 rgba(0,0,0,0.6); margin:0 0 6px; }
+  .tagline{ text-align:center; color:#e8dcbf; font-style:italic; font-size:16px; opacity:0.75; margin:0 0 30px; }
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-family:'Cinzel', serif; font-size:11px; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+  .field input, .field select{
+    width:100%; padding:12px 14px; background:rgba(233,220,189,0.06);
+    border:1px solid rgba(216,167,40,0.3); border-radius:3px; color:#f3e9cf;
+    font-family:'EB Garamond', serif; font-size:17px; outline:none;
+    transition:border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+  .field input::placeholder{ color:#a8967a; }
+  .field input:focus, .field select:focus{ border-color:var(--gold-bright);
+    box-shadow:0 0 0 3px rgba(216,167,40,0.18); background:rgba(233,220,189,0.1); }
+  .seal-btn{
+    width:100%; margin-top:8px; padding:15px 20px;
+    background:radial-gradient(circle at 35% 30%, #7c2222, var(--oxblood-dark) 75%);
+    color:var(--gold-bright); font-family:'Cinzel', serif; letter-spacing:0.14em; text-transform:uppercase;
+    font-size:14px; border:1px solid rgba(216,167,40,0.5); border-radius:3px; cursor:pointer;
+    transition:transform 140ms ease, box-shadow 140ms ease; box-shadow:0 6px 18px rgba(0,0,0,0.45);
+  }
+  .seal-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 24px rgba(0,0,0,0.5), 0 0 0 3px rgba(216,167,40,0.15); }
+  .seal-btn:focus-visible, .field input:focus-visible, .field select:focus-visible{ outline:2px solid var(--candle); outline-offset:2px; }
+  .hint{ text-align:center; margin-top:16px; font-size:13px; color:#c9b98e; opacity:0.75; font-style:italic; min-height:16px; }
+  .hint.err{ color:#e8a3a3; opacity:1; }
+
+  .shelf-header{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:22px; flex-wrap:wrap; }
+  .shelf-header h1{ font-family:'Cinzel', serif; color:var(--gold-bright); font-size:24px; letter-spacing:0.04em; margin:0; }
+  .shelf-header p{ margin:4px 0 0; color:#c9b98e; font-style:italic; font-size:14px; }
+  .logout{ background:none; border:1px solid rgba(216,167,40,0.4); color:var(--gold-bright);
+    font-family:'Cinzel', serif; font-size:11px; letter-spacing:0.12em; text-transform:uppercase;
+    padding:9px 16px; border-radius:3px; cursor:pointer; transition:background 150ms ease, color 150ms ease; }
+  .logout:hover{ background:var(--gold-bright); color:var(--oxblood-dark); }
+
+  .shelf-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:18px; }
+  .book-tile{
+    max-width:170px; aspect-ratio:3/4; border-radius:4px 8px 8px 4px; cursor:pointer; border:none;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+    padding:14px; text-align:center; position:relative;
+    box-shadow:0 10px 22px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(216,167,40,0.25);
+    transition:transform 160ms ease, box-shadow 160ms ease;
+  }
+  .book-tile:hover{ transform:translateY(-4px); box-shadow:0 16px 30px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(216,167,40,0.4); }
+  .book-tile:focus-visible{ outline:2px solid var(--candle); outline-offset:3px; }
+  .book-tile::before{ content:""; position:absolute; left:10px; top:8px; bottom:8px; width:2px; background:rgba(216,167,40,0.5); }
+  .book-tile .bname{ font-family:'Cinzel', serif; font-size:14px; color:var(--gold-bright); line-height:1.25; }
+  .book-tile .bmeta{ font-size:12px; color:#e2d3ac; opacity:0.85; font-style:italic; }
+  .book-tile .bicon{ font-size:26px; opacity:0.9; }
+
+  .book-tile.new{
+    background:rgba(255,255,255,0.03); border:1.5px dashed rgba(216,167,40,0.4); box-shadow:none;
+  }
+  .book-tile.new .bicon{ font-size:30px; color:var(--gold-bright); }
+  .book-tile.new .bname{ color:#e2d3ac; }
+
+  .page{
+    background:linear-gradient(180deg, var(--parchment), var(--parchment-dark));
+    border-radius:4px; box-shadow:0 30px 60px rgba(0,0,0,0.5), inset 0 0 80px rgba(92,26,27,0.08);
+    padding:40px 38px 44px; border:1px solid rgba(92,26,27,0.25);
+    animation:bookOpen 500ms cubic-bezier(.2,.8,.2,1); transform-origin:left center;
+  }
+  @keyframes bookOpen{ from{opacity:0; transform:rotateY(-10deg) scale(.97);} to{opacity:1; transform:rotateY(0) scale(1);} }
+  @media (prefers-reduced-motion: reduce){ .page{ animation:none; } }
+
+  .back-link{
+    background:none; border:none; cursor:pointer; font-family:'Cinzel', serif;
+    font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--oxblood);
+    padding:0; margin-bottom:18px; display:inline-flex; align-items:center; gap:6px;
+  }
+  .back-link:hover{ text-decoration:underline; }
+
+  .page-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+    border-bottom:2px solid rgba(92,26,27,0.35); padding-bottom:20px; margin-bottom:24px; }
+  .titleblock{ display:flex; align-items:baseline; gap:14px; }
+  .dropcap{ font-family:'UnifrakturMaguntia', cursive; font-size:58px; line-height:1; color:var(--oxblood); }
+  .titletext h1{ font-family:'Cinzel', serif; font-size:23px; letter-spacing:0.04em; margin:0 0 4px; color:var(--ink); }
+  .titletext p{ margin:0; font-style:italic; color:var(--ink-soft); font-size:14.5px; }
+
+  .spell-list{ list-style:none; margin:0 0 22px; padding:0; display:grid; gap:10px; }
+  .spell-item{ border-bottom:1px solid rgba(92,26,27,0.12); padding-bottom:8px; }
+  .spell-item:last-child{ border-bottom:none; }
+  .spell-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    font-size:15.5px; color:var(--ink); cursor:pointer; }
+  .spell-name{ font-weight:600; } .spell-name::before{ content:"✦ "; color:var(--gold); }
+  .spell-lvl{ font-size:12.5px; color:var(--ink-soft); font-style:italic; white-space:nowrap; }
+  .spell-desc{ margin:8px 0 0; font-size:14px; color:var(--ink-soft); line-height:1.5;
+    white-space:pre-line; display:none; }
+  .spell-desc.open{ display:block; }
+  .empty-spells{ font-style:italic; color:var(--ink-soft); font-size:14.5px; padding:6px 0 20px; }
+
+  .add-spell{ border-top:1px dashed rgba(92,26,27,0.35); padding-top:20px; }
+  .add-spell h2{ font-family:'Cinzel', serif; font-size:13px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--oxblood); margin:0 0 12px; }
+  .add-spell-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .add-spell-row input{
+    flex:1; min-width:180px; padding:11px 13px; border:1px solid rgba(92,26,27,0.35); border-radius:3px;
+    background:rgba(255,255,255,0.4); font-family:'EB Garamond', serif; font-size:16px; color:var(--ink); outline:none;
+  }
+  .add-spell-row input:focus{ border-color:var(--oxblood); box-shadow:0 0 0 3px rgba(92,26,27,0.15); }
+  .add-spell-row button{
+    padding:11px 18px; background:var(--oxblood); color:var(--parchment); border:none; border-radius:3px;
+    font-family:'Cinzel', serif; font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer;
+    transition:background 150ms ease;
+  }
+  .add-spell-row button:hover{ background:var(--oxblood-dark); }
+  .add-spell-row button:disabled{ opacity:0.55; cursor:progress; }
+  .add-spell-msg{ margin-top:10px; font-size:13px; font-style:italic; color:var(--ink-soft); min-height:16px; }
+  .add-spell-msg.err{ color:#8a2c2c; }
+
+  .overlay{ position:fixed; inset:0; background:rgba(10,6,3,0.7); display:none; align-items:center; justify-content:center; padding:20px; z-index:10; }
+  .overlay.active{ display:flex; }
+  .modal{ width:100%; max-width:420px; }
+
+  @media (max-width:520px){
+    .cover{ padding:36px 22px; } .wordmark{ font-size:42px; }
+    .page{ padding:28px 20px 32px; } .dropcap{ font-size:46px; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <section id="authScreen" class="screen active">
+      <div class="eyebrow">Fábrica de Software · Workshop de Backend</div>
+      <div class="cover">
+        <p class="wordmark">O Grimório</p>
+        <p class="tagline">Selo de sangue e tinta abrem estas páginas</p>
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="user">Nome do Convocador</label>
+            <input id="user" type="text" placeholder="ex. elandril" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="pass">Palavra de Poder</label>
+            <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="seal-btn" id="loginBtn">Romper o Selo &amp; Entrar</button>
+        </form>
+        <p class="hint" id="loginHint">Autentica via POST /api/auth/token/.</p>
+      </div>
+    </section>
+
+    <section id="shelfScreen" class="screen">
+      <div class="shelf-header">
+        <div>
+          <h1>Sua Estante</h1>
+          <p id="shelfSub">Personagens de <span id="userNameShelf">—</span></p>
+        </div>
+        <button class="logout" id="logoutBtn">Fechar o Livro</button>
+      </div>
+      <div class="shelf-grid" id="shelfGrid"></div>
+    </section>
+
+    <section id="bookScreen" class="screen">
+      <button class="back-link" id="backBtn">&larr; Voltar à estante</button>
+      <div class="page">
+        <div class="page-header">
+          <div class="titleblock">
+            <span class="dropcap" id="bookInitial">G</span>
+            <div class="titletext">
+              <h1 id="bookName">—</h1>
+              <p id="bookMeta">—</p>
+            </div>
+          </div>
+        </div>
+
+        <ul class="spell-list" id="spellList"></ul>
+        <p class="empty-spells" id="emptySpells" style="display:none;">Nenhuma magia aprendida ainda.</p>
+
+        <div class="add-spell">
+          <h2>Invocar Nova Magia</h2>
+          <div class="add-spell-row">
+            <input id="spellInput" type="text" placeholder="ex. Bola de Fogo, Curar Ferimentos...">
+            <button id="addSpellBtn">Adicionar</button>
+          </div>
+          <p class="add-spell-msg" id="addSpellMsg"></p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="overlay" id="createOverlay">
+    <div class="cover modal">
+      <p class="wordmark" style="font-size:34px;">Novo Personagem</p>
+      <form id="createForm" novalidate>
+        <div class="field">
+          <label for="cName">Nome</label>
+          <input id="cName" type="text" placeholder="ex. Sylvanas" required>
+        </div>
+        <div class="field">
+          <label for="cClasse">Classe</label>
+          <input id="cClasse" type="text" placeholder="ex. Guerreira" required>
+        </div>
+        <div class="field">
+          <label for="cNivel">Nível</label>
+          <input id="cNivel" type="number" min="1" max="20" value="1" required>
+        </div>
+        <button type="submit" class="seal-btn">Encadernar Personagem</button>
+      </form>
+      <p class="hint err" id="createError" style="display:none;"></p>
+      <p class="hint" id="createHint" style="cursor:pointer;">Cancelar</p>
+    </div>
+  </div>
+
+<script>
+  const API_BASE = "http://localhost:8000";
+  let authToken = null;
+
+  async function apiLogin(username, password){
+    const res = await fetch(`${API_BASE}/api/auth/token/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) throw new Error("Credenciais inválidas");
+    const data = await res.json();
+    return data.access;
+  }
+
+  async function apiListPersonagens(){
+    const res = await fetch(`${API_BASE}/api/personagens/`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (!res.ok) throw new Error("Falha ao listar personagens");
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+  }
+
+  async function apiCreatePersonagem(payload){
+    const res = await fetch(`${API_BASE}/api/personagens/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("Falha ao criar personagem");
+    return res.json();
+  }
+
+  function slugifyMagicName(value){
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  async function apiListMagias(personagemId){
+    const res = await fetch(`${API_BASE}/api/magias/`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+    if (!res.ok) throw new Error("Falha ao listar magias");
+
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (data.results || []);
+    return items.filter((item) => String(item.personagem) === String(personagemId));
+  }
+
+  async function apiAddMagia(personagemId, nomeMagia){
+    const fonteApi = slugifyMagicName(nomeMagia);
+
+    const res = await fetch(`${API_BASE}/api/magias/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({
+        fonte_api: fonteApi,
+        personagem: Number(personagemId),
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const mensagem = body.erro || body.detail || "Magia não encontrada na D&D 5e API";
+      throw new Error(mensagem);
+    }
+
+    return res.json();
+  }
+
+  const screens = {
+    auth: document.getElementById('authScreen'),
+    shelf: document.getElementById('shelfScreen'),
+    book: document.getElementById('bookScreen'),
+  };
+  function show(name){
+    Object.values(screens).forEach(s => s.classList.remove('active'));
+    screens[name].classList.add('active');
+  }
+
+  let currentUser = "";
+  let currentPersonagens = [];
+  let activePersonagemId = null;
+
+  const loginForm = document.getElementById('loginForm');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginHint = document.getElementById('loginHint');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = document.getElementById('user').value.trim();
+    const pass = document.getElementById('pass').value;
+    if (!user || !pass) return;
+
+    loginBtn.disabled = true;
+    loginHint.textContent = "Rompendo o selo...";
+    loginHint.classList.remove('err');
+
+    try {
+      authToken = await apiLogin(user, pass);
+    } catch (err) {
+      loginHint.textContent = "Credenciais inválidas ou servidor indisponível.";
+      loginHint.classList.add('err');
+      loginBtn.disabled = false;
+      return;
+    }
+
+    currentUser = user;
+    document.getElementById('userNameShelf').textContent = currentUser;
+    try {
+      await loadShelf();
+      show('shelf');
+    } catch (err) {
+      loginHint.textContent = "Login ok, mas falhou ao carregar os personagens.";
+      loginHint.classList.add('err');
+    }
+    loginBtn.disabled = false;
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    authToken = null; currentPersonagens = [];
+    loginForm.reset();
+    loginHint.textContent = "Autentica via POST /api/auth/token/.";
+    loginHint.classList.remove('err');
+    show('auth');
+  });
+
+  const shelfGrid = document.getElementById('shelfGrid');
+  const trims = ['var(--arcane)','var(--gold)','var(--oxblood)','#3b2f6b'];
+
+  async function loadShelf(){
+    currentPersonagens = await apiListPersonagens();
+    renderShelf();
+  }
+
+  function renderShelf(){
+    shelfGrid.innerHTML = "";
+    currentPersonagens.forEach((p, i) => {
+      const trim = trims[i % trims.length];
+      const btn = document.createElement('button');
+      btn.className = 'book-tile';
+      btn.style.background = `linear-gradient(160deg, rgba(255,255,255,0.05), rgba(0,0,0,0.3)), radial-gradient(ellipse at 50% 0%, ${trim}, var(--oxblood-dark) 85%)`;
+      btn.innerHTML = `
+        <span class="bicon">📖</span>
+        <span class="bname">${p.nome}</span>
+        <span class="bmeta">Nv. ${p.nivel} · ${p.classe}</span>`;
+      btn.addEventListener('click', () => openBook(p.id));
+      shelfGrid.appendChild(btn);
+    });
+
+    const newTile = document.createElement('button');
+    newTile.className = 'book-tile new';
+    newTile.innerHTML = `<span class="bicon">+</span><span class="bname">Novo Personagem</span>`;
+    newTile.addEventListener('click', () => createOverlay.classList.add('active'));
+    shelfGrid.appendChild(newTile);
+  }
+
+  const createOverlay = document.getElementById('createOverlay');
+  document.getElementById('createHint').addEventListener('click', () => createOverlay.classList.remove('active'));
+  createOverlay.addEventListener('click', (e) => { if (e.target === createOverlay) createOverlay.classList.remove('active'); });
+
+  document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('cName').value.trim();
+    const classe = document.getElementById('cClasse').value.trim();
+    const nivel = parseInt(document.getElementById('cNivel').value, 10) || 1;
+    if (!nome || !classe) return;
+
+    const payload = { nome, classe, nivel };
+    const createError = document.getElementById('createError');
+    createError.style.display = 'none';
+
+    try {
+      const created = await apiCreatePersonagem(payload);
+      currentPersonagens.push({ ...created, magias: created.magias || [] });
+    } catch (err) {
+      createError.textContent = "Falha ao criar personagem. Verifique se você está autenticado e se o servidor está no ar.";
+      createError.style.display = 'block';
+      return;
+    }
+    e.target.reset();
+    document.getElementById('cNivel').value = 1;
+    createOverlay.classList.remove('active');
+    renderShelf();
+  });
+
+  const spellList = document.getElementById('spellList');
+  const emptySpells = document.getElementById('emptySpells');
+
+  async function openBook(personagemId){
+    activePersonagemId = personagemId;
+    const p = currentPersonagens.find(x => x.id === personagemId);
+    if (!p) return;
+
+    document.getElementById('bookInitial').textContent = p.nome.charAt(0).toUpperCase();
+    document.getElementById('bookName').textContent = p.nome;
+    document.getElementById('bookMeta').textContent = `Nível ${p.nivel} · ${p.classe}`;
+    document.getElementById('spellInput').value = "";
+    document.getElementById('addSpellMsg').textContent = "";
+
+    let magias = p.magias || [];
+    try {
+      magias = await apiListMagias(personagemId);
+      p.magias = magias;
+    } catch (err) {
+      document.getElementById('addSpellMsg').textContent = "Falha ao carregar magias do servidor.";
+      document.getElementById('addSpellMsg').classList.add('err');
+    }
+    renderSpells(magias);
+    show('book');
+  }
+
+  function renderSpells(magias){
+    spellList.innerHTML = "";
+    emptySpells.style.display = magias.length ? 'none' : 'block';
+    magias.forEach((m, idx) => {
+      const li = document.createElement('li');
+      li.className = 'spell-item';
+      const lvlLabel = (m.nivel === 0) ? 'Truque' : `Nível ${m.nivel}`;
+      const descId = `spellDesc-${idx}`;
+      li.innerHTML = `
+        <div class="spell-row" data-target="${descId}">
+          <span class="spell-name">${m.nome}</span><span class="spell-lvl">${lvlLabel}</span>
+        </div>
+        <p class="spell-desc" id="${descId}">${m.descricao ? m.descricao.replace(/&/g,'&amp;').replace(/</g,'&lt;') : 'Sem descrição disponível.'}</p>`;
+      li.querySelector('.spell-row').addEventListener('click', () => {
+        li.querySelector('.spell-desc').classList.toggle('open');
+      });
+      spellList.appendChild(li);
+    });
+  }
+
+  document.getElementById('backBtn').addEventListener('click', () => show('shelf'));
+
+  const addSpellBtn = document.getElementById('addSpellBtn');
+  const addSpellMsg = document.getElementById('addSpellMsg');
+  const spellInput = document.getElementById('spellInput');
+
+  addSpellBtn.addEventListener('click', async () => {
+    const nome = spellInput.value.trim();
+    if (!nome) return;
+    const p = currentPersonagens.find(x => x.id === activePersonagemId);
+    if (!p) return;
+
+    addSpellBtn.disabled = true;
+    addSpellMsg.classList.remove('err');
+    addSpellMsg.textContent = "Consultando a D&D 5e API...";
+
+    try {
+      const nova = await apiAddMagia(activePersonagemId, nome);
+      p.magias = p.magias || [];
+      p.magias.push(nova);
+      addSpellMsg.textContent = `"${nova.nome}" adicionada ao grimório.`;
+      renderSpells(p.magias);
+      const lastDesc = spellList.querySelector('.spell-item:last-child .spell-desc');
+      if (lastDesc) lastDesc.classList.add('open');
+      spellInput.value = "";
+      addSpellBtn.disabled = false;
+      return;
+    } catch (err) {
+      addSpellMsg.textContent = err.message || "Magia não encontrada.";
+      addSpellMsg.classList.add('err');
+    }
+
+    renderSpells(p.magias);
+    spellInput.value = "";
+    addSpellBtn.disabled = false;
+  });
+
+  spellInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addSpellBtn.click(); });
+</script>
+</body>
+</html>
