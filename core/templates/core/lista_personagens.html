@@ -211,7 +211,7 @@
           <button type="submit" class="seal-btn" id="registerBtn">Selar Novo Pacto &amp; Criar Conta</button>
         </form>
 
-        <p class="hint" id="loginHint">Autentica via POST /api/auth/token/.</p>
+        <p class="hint" id="loginHint"></p>
         <p class="hint" id="authToggle" style="cursor:pointer; text-decoration:underline;">Não tem conta? Criar uma</p>
       </div>
     </section>
@@ -402,9 +402,7 @@
     authTagline.textContent = modoRegistro
       ? 'Todo convocador precisa de um nome e uma senha'
       : 'Selo de sangue e tinta abrem estas páginas';
-    loginHint.textContent = modoRegistro
-      ? 'Registra via POST /api/auth/register/.'
-      : 'Autentica via POST /api/auth/token/.';
+    loginHint.textContent = "";
     loginHint.classList.remove('err');
   });
 
@@ -485,7 +483,7 @@
     loginForm.reset();
     registerForm.reset();
     if (modoRegistro) authToggle.click();
-    loginHint.textContent = "Autentica via POST /api/auth/token/.";
+    loginHint.textContent = "";
     loginHint.classList.remove('err');
     show('auth');
   });
@@ -575,6 +573,10 @@
     show('book');
   }
 
+  function escapeHtml(str){
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function renderSpells(magias){
     spellList.innerHTML = "";
     emptySpells.style.display = magias.length ? 'none' : 'block';
@@ -583,11 +585,32 @@
       li.className = 'spell-item';
       const lvlLabel = (m.nivel === 0) ? 'Truque' : `Nível ${m.nivel}`;
       const descId = `spellDesc-${idx}`;
+
+      const badges = [];
+      if (m.ritual) badges.push('Ritual');
+      if (m.concentracao) badges.push('Concentração');
+
+      const stats = [
+        ['Escola', m.escola],
+        ['Tempo de Conjuração', m.tempo_conjuracao],
+        ['Alcance', m.alcance],
+        ['Componentes', m.material ? `${m.componentes} (${m.material})` : m.componentes],
+        ['Duração', m.duracao],
+        ['Dano', m.dano],
+        ['Teste de Resistência', m.cd],
+        ['Área de Efeito', m.area_efeito],
+      ].filter(([, valor]) => !!valor);
+
       li.innerHTML = `
         <div class="spell-row" data-target="${descId}">
-          <span class="spell-name">${m.nome}</span><span class="spell-lvl">${lvlLabel}</span>
+          <span class="spell-name">${escapeHtml(m.nome)}</span><span class="spell-lvl">${lvlLabel}</span>
         </div>
-        <p class="spell-desc" id="${descId}">${m.descricao ? m.descricao.replace(/&/g,'&amp;').replace(/</g,'&lt;') : 'Sem descrição disponível.'}</p>`;
+        <div class="spell-desc" id="${descId}">
+          ${badges.length ? `<div class="spell-badges">${badges.map(b => `<span class="spell-badge">${b}</span>`).join('')}</div>` : ''}
+          ${stats.length ? `<div class="spell-stats">${stats.map(([label, valor]) =>
+            `<div class="stat"><b>${label}</b>${escapeHtml(valor)}</div>`).join('')}</div>` : ''}
+          <p class="spell-text">${m.descricao ? escapeHtml(m.descricao) : 'Sem descrição disponível.'}</p>
+        </div>`;
       li.querySelector('.spell-row').addEventListener('click', () => {
         li.querySelector('.spell-desc').classList.toggle('open');
       });
