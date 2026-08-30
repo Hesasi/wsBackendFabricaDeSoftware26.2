@@ -38,6 +38,70 @@ class TestFetchSpellFromDndApi:
         )
 
     @patch("core.services.requests.get")
+    def test_campos_de_conjuracao_ausentes_na_api_retornam_none(self, mock_get):
+        """Magias sem casting_time/range/etc. (dict mínimo) não devem quebrar o parsing."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "name": "Fireball",
+            "level": 3,
+            "school": {"name": "Evocation"},
+            "desc": ["Uma explosão de fogo."],
+        }
+        mock_get.return_value = mock_response
+
+        resultado = fetch_spell_from_dnd_api("fireball")
+
+        assert resultado["tempo_conjuracao"] is None
+        assert resultado["alcance"] is None
+        assert resultado["componentes"] is None
+        assert resultado["material"] is None
+        assert resultado["duracao"] is None
+        assert resultado["ritual"] is False
+        assert resultado["concentracao"] is False
+        assert resultado["dano"] is None
+        assert resultado["cd"] is None
+        assert resultado["area_efeito"] is None
+
+    @patch("core.services.requests.get")
+    def test_campos_de_conjuracao_completos_sao_normalizados(self, mock_get):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "name": "Fireball",
+            "level": 3,
+            "school": {"name": "Evocation"},
+            "desc": ["Uma explosão de fogo."],
+            "casting_time": "1 action",
+            "range": "150 feet",
+            "components": ["V", "S", "M"],
+            "material": "A tiny ball of bat guano and sulfur.",
+            "duration": "Instantaneous",
+            "ritual": False,
+            "concentration": False,
+            "damage": {
+                "damage_type": {"name": "Fire"},
+                "damage_at_slot_level": {"3": "8d6", "4": "9d6"},
+            },
+            "dc": {"dc_type": {"name": "Dexterity"}, "dc_success": "half"},
+            "area_of_effect": {"type": "sphere", "size": 20},
+        }
+        mock_get.return_value = mock_response
+
+        resultado = fetch_spell_from_dnd_api("fireball")
+
+        assert resultado["tempo_conjuracao"] == "1 action"
+        assert resultado["alcance"] == "150 feet"
+        assert resultado["componentes"] == "V, S, M"
+        assert resultado["material"] == "A tiny ball of bat guano and sulfur."
+        assert resultado["duracao"] == "Instantaneous"
+        assert resultado["ritual"] is False
+        assert resultado["concentracao"] is False
+        assert resultado["dano"] == "8d6 de dano de Fire"
+        assert resultado["cd"] == "Dexterity (metade do dano no sucesso)"
+        assert resultado["area_efeito"] == "20 ft (sphere)"
+
+    @patch("core.services.requests.get")
     def test_magia_inexistente_retorna_none(self, mock_get):
         mock_response = Mock()
         mock_response.status_code = 404
