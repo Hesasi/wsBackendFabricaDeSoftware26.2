@@ -60,13 +60,40 @@ class PersonagemViewSet(viewsets.ModelViewSet):
         description=(
             "O campo `fonte_api` é o **slug** da magia na D&D 5e API "
             "(ex: `fireball`, `magic-missile`), não um nome livre. "
-            "A busca é feita por slug exato; se não existir, retorna 404."
+            "A busca é feita por slug exato; se não existir, retorna 404. "
+            "A resposta traz, além dos dados básicos, os detalhes de conjuração "
+            "(`tempo_conjuracao`, `alcance`, `componentes`, `material`, `duracao`, "
+            "`ritual`, `concentracao`, `dano`, `cd`, `area_efeito`) quando a API "
+            "externa os fornecer — campos sem valor para a magia vêm como `null`."
         ),
         examples=[
             OpenApiExample(
-                "Adicionar Bola de Fogo",
+                "Adicionar Bola de Fogo (request)",
                 value={"fonte_api": "fireball", "personagem": 1},
                 request_only=True,
+            ),
+            OpenApiExample(
+                "Bola de Fogo adicionada (response)",
+                value={
+                    "id": 10,
+                    "nome": "Fireball",
+                    "nivel": 3,
+                    "escola": "Evocation",
+                    "descricao": "A bright streak flashes from your pointing finger...",
+                    "fonte_api": "fireball",
+                    "personagem": 1,
+                    "tempo_conjuracao": "1 action",
+                    "alcance": "150 feet",
+                    "componentes": "V, S, M",
+                    "material": "A tiny ball of bat guano and sulfur.",
+                    "duracao": "Instantaneous",
+                    "ritual": False,
+                    "concentracao": False,
+                    "dano": "8d6 de dano de Fire",
+                    "cd": "Dexterity (metade do dano no sucesso)",
+                    "area_efeito": "20 ft (sphere)",
+                },
+                response_only=True,
             ),
         ],
     ),
@@ -120,6 +147,16 @@ class MagiaViewSet(viewsets.ModelViewSet):
                     escola=dados_magia["escola"],
                     descricao=dados_magia["descricao"],
                     fonte_api=dados_magia["fonte_api"],
+                    tempo_conjuracao=dados_magia.get("tempo_conjuracao"),
+                    alcance=dados_magia.get("alcance"),
+                    componentes=dados_magia.get("componentes"),
+                    material=dados_magia.get("material"),
+                    duracao=dados_magia.get("duracao"),
+                    ritual=dados_magia.get("ritual", False),
+                    concentracao=dados_magia.get("concentracao", False),
+                    dano=dados_magia.get("dano"),
+                    cd=dados_magia.get("cd"),
+                    area_efeito=dados_magia.get("area_efeito"),
                 )
 
             serializer = self.get_serializer(magia)
