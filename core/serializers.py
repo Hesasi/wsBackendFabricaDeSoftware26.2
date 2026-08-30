@@ -27,10 +27,18 @@ class RegisterSerializer(serializers.ModelSerializer):
 class MagiaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Magia
-        fields = ["id", "nome", "nivel", "escola", "descricao", "fonte_api", "personagem"]
+        fields = [
+            "id", "nome", "nivel", "escola", "descricao", "fonte_api", "personagem",
+            "tempo_conjuracao", "alcance", "componentes", "material", "duracao",
+            "ritual", "concentracao", "dano", "cd", "area_efeito",
+        ]
 
         # Esses campos são preenchidos pelo backend, não pelo cliente via Postman.
-        read_only_fields = ["nome", "nivel", "escola", "descricao", "personagem"]
+        read_only_fields = [
+            "nome", "nivel", "escola", "descricao", "personagem",
+            "tempo_conjuracao", "alcance", "componentes", "material", "duracao",
+            "ritual", "concentracao", "dano", "cd", "area_efeito",
+        ]
 
 
 class PersonagemSerializer(serializers.ModelSerializer):
