@@ -115,8 +115,25 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Grimório D&D API',
-    'DESCRIPTION': 'API para gerenciamento de personagens e magias de D&D',
+    'TITLE': 'O Grimório — API',
+    'DESCRIPTION': (
+        'API REST para gerenciar personagens de RPG e seus feitiços. '
+        'Ao adicionar uma magia, o backend busca os atributos oficiais na D&D 5e API '
+        'e persiste uma cópia local (cache) associada ao personagem.\n\n'
+        'Fluxo básico: registre uma conta em `/api/auth/register/`, autentique em '
+        '`/api/auth/token/` e use o `access` token retornado como '
+        '`Authorization: Bearer <token>` nas demais rotas.'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'TAGS': [
+        {'name': 'auth', 'description': 'Registro de conta e emissão/renovação de tokens JWT'},
+        {'name': 'personagens', 'description': 'CRUD de personagens do usuário autenticado'},
+        {'name': 'magias', 'description': 'Busca na D&D 5e API e gerenciamento das magias de cada personagem'},
+    ],
+    'SWAGGER_UI_SETTINGS': {
+        'docExpansion': 'list',
+        'defaultModelsExpandDepth': -1,
+        'persistAuthorization': True,
+    },
 }

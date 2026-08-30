@@ -181,7 +181,8 @@
       <div class="eyebrow">Fábrica de Software · Workshop de Backend</div>
       <div class="cover">
         <p class="wordmark">O Grimório</p>
-        <p class="tagline">Selo de sangue e tinta abrem estas páginas</p>
+        <p class="tagline" id="authTagline">Selo de sangue e tinta abrem estas páginas</p>
+
         <form id="loginForm" novalidate>
           <div class="field">
             <label for="user">Nome do Convocador</label>
@@ -193,7 +194,25 @@
           </div>
           <button type="submit" class="seal-btn" id="loginBtn">Romper o Selo &amp; Entrar</button>
         </form>
+
+        <form id="registerForm" novalidate style="display:none;">
+          <div class="field">
+            <label for="regUser">Nome do Convocador</label>
+            <input id="regUser" type="text" placeholder="ex. elandril" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="regEmail">Email (opcional)</label>
+            <input id="regEmail" type="email" placeholder="ex. elandril@grimorio.com" autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="regPass">Palavra de Poder</label>
+            <input id="regPass" type="password" placeholder="mínimo 8 caracteres" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="seal-btn" id="registerBtn">Selar Novo Pacto &amp; Criar Conta</button>
+        </form>
+
         <p class="hint" id="loginHint">Autentica via POST /api/auth/token/.</p>
+        <p class="hint" id="authToggle" style="cursor:pointer; text-decoration:underline;">Não tem conta? Criar uma</p>
       </div>
     </section>
 
@@ -227,7 +246,7 @@
         <div class="add-spell">
           <h2>Invocar Nova Magia</h2>
           <div class="add-spell-row">
-            <input id="spellInput" type="text" placeholder="ex. Bola de Fogo, Curar Ferimentos...">
+            <input id="spellInput" type="text" placeholder="ex. fireball, magic-missile...">
             <button id="addSpellBtn">Adicionar</button>
           </div>
           <p class="add-spell-msg" id="addSpellMsg"></p>
@@ -247,7 +266,7 @@
         </div>
         <div class="field">
           <label for="cClasse">Classe</label>
-          <input id="cClasse" type="text" placeholder="ex. Guerreira" required>
+          <input id="cClasse" type="text" placeholder="ex. Mago" required>
         </div>
         <div class="field">
           <label for="cNivel">Nível</label>
@@ -273,6 +292,21 @@
     if (!res.ok) throw new Error("Credenciais inválidas");
     const data = await res.json();
     return data.access;
+  }
+
+  async function apiRegister(username, email, password){
+    const res = await fetch(`${API_BASE}/api/auth/register/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const primeiraChave = Object.keys(body)[0];
+      const mensagem = primeiraChave ? [].concat(body[primeiraChave])[0] : "Não foi possível criar a conta.";
+      throw new Error(mensagem);
+    }
+    return res.json();
   }
 
   async function apiListPersonagens(){
@@ -354,6 +388,66 @@
   const loginForm = document.getElementById('loginForm');
   const loginBtn = document.getElementById('loginBtn');
   const loginHint = document.getElementById('loginHint');
+  const registerForm = document.getElementById('registerForm');
+  const registerBtn = document.getElementById('registerBtn');
+  const authToggle = document.getElementById('authToggle');
+  const authTagline = document.getElementById('authTagline');
+  let modoRegistro = false;
+
+  authToggle.addEventListener('click', () => {
+    modoRegistro = !modoRegistro;
+    loginForm.style.display = modoRegistro ? 'none' : 'block';
+    registerForm.style.display = modoRegistro ? 'block' : 'none';
+    authToggle.textContent = modoRegistro ? 'Já tem conta? Entrar' : 'Não tem conta? Criar uma';
+    authTagline.textContent = modoRegistro
+      ? 'Todo convocador precisa de um nome e uma senha'
+      : 'Selo de sangue e tinta abrem estas páginas';
+    loginHint.textContent = modoRegistro
+      ? 'Registra via POST /api/auth/register/.'
+      : 'Autentica via POST /api/auth/token/.';
+    loginHint.classList.remove('err');
+  });
+
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('regUser').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPass').value;
+    if (!username || !password) return;
+
+    registerBtn.disabled = true;
+    loginHint.textContent = "Selando o pacto...";
+    loginHint.classList.remove('err');
+
+    try {
+      await apiRegister(username, email, password);
+    } catch (err) {
+      loginHint.textContent = err.message;
+      loginHint.classList.add('err');
+      registerBtn.disabled = false;
+      return;
+    }
+
+    try {
+      authToken = await apiLogin(username, password);
+    } catch (err) {
+      loginHint.textContent = "Conta criada! Faça login para entrar.";
+      authToggle.click();
+      registerBtn.disabled = false;
+      return;
+    }
+
+    currentUser = username;
+    document.getElementById('userNameShelf').textContent = currentUser;
+    try {
+      await loadShelf();
+      show('shelf');
+    } catch (err) {
+      loginHint.textContent = "Conta criada, mas falhou ao carregar os personagens.";
+      loginHint.classList.add('err');
+    }
+    registerBtn.disabled = false;
+  });
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -389,6 +483,8 @@
   document.getElementById('logoutBtn').addEventListener('click', () => {
     authToken = null; currentPersonagens = [];
     loginForm.reset();
+    registerForm.reset();
+    if (modoRegistro) authToggle.click();
     loginHint.textContent = "Autentica via POST /api/auth/token/.";
     loginHint.classList.remove('err');
     show('auth');

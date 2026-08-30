@@ -81,6 +81,7 @@ Todas as rotas de `/api/`, exceto a de autenticação, exigem token JWT no heade
 
 | Método | Rota | Descrição |
 |---|---|---|
+| POST | `/api/auth/register/` | Cria uma nova conta (público, sem token) |
 | POST | `/api/auth/token/` | Obtém o par de tokens JWT (access/refresh) |
 | POST | `/api/auth/token/refresh/` | Renova o access token |
 | GET | `/api/personagens/` | Lista os personagens do usuário autenticado |
@@ -93,6 +94,18 @@ Todas as rotas de `/api/`, exceto a de autenticação, exigem token JWT no heade
 | DELETE | `/api/magias/{id}/` | Remove uma magia do grimório |
 | GET | `/grimorio/` | Página funcional (SPA autenticada via JWT) |
 | GET | `/api/docs/` | Documentação Swagger/OpenAPI |
+
+### Exemplo: criar uma conta e autenticar
+
+```bash
+curl -X POST http://localhost:8000/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "elandril", "password": "SenhaForte123!"}'
+
+curl -X POST http://localhost:8000/api/auth/token/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "elandril", "password": "SenhaForte123!"}'
+```
 
 ### Exemplo: criar um personagem
 
